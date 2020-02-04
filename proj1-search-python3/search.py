@@ -151,9 +151,7 @@ def get_path2(last_node, came_from, node_info):
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
-    "*** YOUR CODE HERE ***"
     start_state = problem.getStartState()
-    
     frontier = Queue()
     visited = set()
     came_from = dict()
@@ -179,11 +177,11 @@ def breadthFirstSearch(problem):
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
-    start_state = (problem.getStartState(), '', 0, 0)
+    start_state = problem.getStartState()
     frontier = StatefulPriorityQueue()
     came_from = dict()
     visited = set()
-    frontier.push(start_state,0)
+    frontier.push((start_state, '', 0, 0),0)
     frontier_states = set(start_state)
     curr_node = None
 
@@ -200,11 +198,11 @@ def uniformCostSearch(problem):
         for successor in problem.getSuccessors(curr_state):
             if successor[0] not in chain(visited, frontier_states):
                 cost = successor[2]
-                successor = successor + (CSF+cost,)
                 frontier_states.add(successor[0])
+                successor = successor + (CSF+cost,)
                 if frontier.update(successor, CSF + cost):
                     came_from[successor] = curr_node
-    # print(came_from, curr_node, curr_state)
+    
     return get_path(curr_node, came_from)
 
 def nullHeuristic(state, problem=None):
