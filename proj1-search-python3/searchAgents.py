@@ -364,6 +364,8 @@ def cornersHeuristic(state, problem):
     shortest path from the state to a goal of the problem; i.e.  it should be
     admissible (as well as consistent).
     """
+    return NotImplemented
+
     if problem.isGoalState(state):
         return 0
     corners = problem.corners
@@ -465,6 +467,8 @@ def foodHeuristic(state, problem):
     """
     position, foodGrid = state
     "*** YOUR CODE HERE ***"
+    return NotImplemented
+
     if problem.isGoalState(state):
         return 0
     h = 0
@@ -501,6 +505,8 @@ class ClosestDotSearchAgent(SearchAgent):
         problem = AnyFoodSearchProblem(gameState)
 
         "*** YOUR CODE HERE ***"
+        return NotImplemented
+
         return search.bfs(problem)
 
 class AnyFoodSearchProblem(PositionSearchProblem):
@@ -537,6 +543,7 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         x,y = state
 
         "*** YOUR CODE HERE ***"
+        return NotImplemented
         distances = []
         for dot in self.food.asList():
             distances.append((util.manhattanDistance(state,dot), dot))

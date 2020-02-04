@@ -19,6 +19,7 @@ Pacman agents (in searchAgents.py).
 
 import util
 from queue import Queue
+from itertools import chain
 import heapq
 
 class SearchProblem:
@@ -63,33 +64,11 @@ class SearchProblem:
         """
         util.raiseNotDefined()
 
-class MyPriorityQueue:
+class StatefulPriorityQueue(util.PriorityQueue):
     """
-      Implements a priority queue data structure. Each inserted item
-      has a priority associated with it and the client is usually interested
-      in quick retrieval of the lowest-priority item in the queue. This
-      data structure allows O(1) access to the lowest-priority item.
+      Extends provided priority queue to return success on updates
     """
-    def  __init__(self):
-        self.heap = []
-        self.count = 0
-
-    def push(self, item, priority):
-        entry = (priority, self.count, item)
-        heapq.heappush(self.heap, entry)
-        self.count += 1
-
-    def pop(self):
-        (_, _, item) = heapq.heappop(self.heap)
-        return item
-
-    def isEmpty(self):
-        return len(self.heap) == 0
-
     def update(self, item, priority):
-        # If item already in priority queue with higher priority, update its priority and rebuild the heap.
-        # If item already in priority queue with equal or lower priority, do nothing.
-        # If item not in priority queue, do the same thing as self.push.
         for index, (p, c, i) in enumerate(self.heap):
             if i == item:
                 if p <= priority:
@@ -126,10 +105,6 @@ def depthFirstSearch(problem):
     print("Is the start a goal?", problem.isGoalState(problem.getStartState()))
     print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     """
-    "*** YOUR CODE HERE ***"
-    # print("Start:", problem.getStartState())
-    # print("Is the start a goal?", problem.isGoalState(problem.getStartState()))
-    # print("Start's successors:", problem.getSuccessors(problem.getStartState()))
     dfs_stack = util.Stack()
     visited = []
     start = problem.getStartState()
@@ -150,82 +125,87 @@ def depthFirstSearch(problem):
     ret = get_path(next_node, came_from)
     return ret
 
-def get_path(last_node, came_from, node_info=None):
+def get_path(last_node, came_from):
     result = []
-    if not node_info:
-        result.append(last_node[1])
-        parent = came_from[last_node]
-        while not parent[1] == "":
-            result.append(parent[1])
-            parent = came_from[parent]
-    elif node_info:
-        info = node_info[last_node]
-        result.append(info[1])
-        parent_name = came_from[last_node]
-        parent_info = node_info[parent_name]
-        while not parent_info[1] == '':
-            result.append(parent_info[1])
-            parent_name = came_from[parent_name]
-            parent_info = node_info[parent_name]
+    result.append(last_node[1])
+    parent = came_from[last_node]
+    while not parent[1] == "":
+        result.append(parent[1])
+        parent = came_from[parent]
     result.reverse()
     return result
+
+def get_path2(last_node, came_from, node_info):
+    result = []
+    info = node_info[last_node]
+    result.append(info[1])
+    parent_name = came_from[last_node]
+    parent_info = node_info[parent_name]
+    while not parent_info[1] == '':
+        result.append(parent_info[1])
+        parent_name = came_from[parent_name]
+        parent_info = node_info[parent_name]
+    result.reverse()
+    return result
+
 
 def breadthFirstSearch(problem):
     """Search the shallowest nodes in the search tree first."""
     "*** YOUR CODE HERE ***"
-    frontier = Queue()
-    visited = []
-    came_from = dict()
     start_state = problem.getStartState()
+    
+    frontier = Queue()
+    visited = set()
+    came_from = dict()
     frontier.put((start_state, "", 0))
-    states = [start_state]
-    next_node = None
+    frontier_states = set(start_state)
+    curr_node = None
     while not frontier.empty():
-        next_node = frontier.get()
-        # print("getting next node:", next_node)
-        try:
-            states.remove(next_node[0])
-        except:
-            pass
-        visited.append(next_node[0])
-        if problem.isGoalState(next_node[0]):
-            # print("found goal state:", next_node) 
+
+        curr_node = frontier.get()
+        curr_state = curr_node[0]
+        frontier_states.discard(curr_state)
+        visited.add(curr_state)
+        if problem.isGoalState(curr_state):
             break
-        for successor in problem.getSuccessors(next_node[0]):
-            if successor[0] not in visited and successor[0] not in states:
+
+        for successor in problem.getSuccessors(curr_state):
+            if successor[0] not in chain(visited, frontier_states):
                 frontier.put(successor)
-                states.append(successor[0])
-                came_from[successor] = next_node
-    return get_path(next_node, came_from)
+                frontier_states.add(successor[0])
+                came_from[successor] = curr_node
+
+    return get_path(curr_node, came_from)
 
 def uniformCostSearch(problem):
     """Search the node of least total cost first."""
-    "*** YOUR CODE HERE ***"
-    frontier = MyPriorityQueue()
-    node_info = dict()
+    start_state = (problem.getStartState(), '', 0, 0)
+    frontier = StatefulPriorityQueue()
     came_from = dict()
-    explored = []
-    state_to_check = None
-    start_state = problem.getStartState()
-    node_info[start_state] = (start_state, '', 0)
-    frontier.push(start_state, 0)
-    states_on_frontier = [start_state]
+    visited = set()
+    frontier.push(start_state,0)
+    frontier_states = set(start_state)
+    curr_node = None
+
     while not frontier.isEmpty():
-        state_to_check = frontier.pop()
-        info = node_info[state_to_check]
-        try:
-            states_on_frontier.remove(state_to_check)
-        except:
-            pass
-        explored.append(state_to_check)
-        if problem.isGoalState(state_to_check):
+        
+        curr_node = frontier.pop()
+        curr_state = curr_node[0]
+        frontier_states.discard(curr_state)
+        visited.add(curr_state)
+        if problem.isGoalState(curr_state):
             break
-        for successor in problem.getSuccessors(state_to_check):
-            if successor[0] not in explored:
-                if frontier.update(successor[0], info[2] + successor[2]):
-                    came_from[successor[0]] = state_to_check
-                    node_info[successor[0]] = (successor[0], successor[1], info[2] + successor[2])
-    return get_path(state_to_check, came_from, node_info)
+        
+        CSF = curr_node[3]
+        for successor in problem.getSuccessors(curr_state):
+            if successor[0] not in chain(visited, frontier_states):
+                cost = successor[2]
+                successor = successor + (CSF+cost,)
+                frontier_states.add(successor[0])
+                if frontier.update(successor, CSF + cost):
+                    came_from[successor] = curr_node
+    # print(came_from, curr_node, curr_state)
+    return get_path(curr_node, came_from)
 
 def nullHeuristic(state, problem=None):
     """
@@ -237,7 +217,7 @@ def nullHeuristic(state, problem=None):
 def aStarSearch(problem, heuristic=nullHeuristic):
     """Search the node that has the lowest combined cost and heuristic first."""
     "*** YOUR CODE HERE ***"
-    frontier = MyPriorityQueue()
+    frontier = StatefulPriorityQueue()
     node_info = dict()
     came_from = dict()
     explored = []
@@ -261,7 +241,7 @@ def aStarSearch(problem, heuristic=nullHeuristic):
                 if frontier.update(successor[0], info[2] + successor[2] + heuristic(successor[0], problem)):
                     came_from[successor[0]] = state_to_check
                     node_info[successor[0]] = (successor[0], successor[1], info[2] + successor[2])
-    return get_path(state_to_check, came_from, node_info)
+    return get_path2(state_to_check, came_from, node_info)
 
 # Abbreviations
 bfs = breadthFirstSearch
