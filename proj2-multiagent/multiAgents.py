@@ -15,6 +15,8 @@
 from util import manhattanDistance
 from game import Directions
 import random, util
+from time import sleep
+from pacman import GameState
 
 from game import Agent
 
@@ -29,7 +31,7 @@ class ReflexAgent(Agent):
     """
 
 
-    def getAction(self, gameState):
+    def getAction(self, gameState: GameState):
         """
         You do not need to change this method, but you're welcome to.
 
@@ -40,12 +42,16 @@ class ReflexAgent(Agent):
         """
         # Collect legal moves and successor states
         legalMoves = gameState.getLegalActions()
-
+        # print(legalMoves)
         # Choose one of the best actions
         scores = [self.evaluationFunction(gameState, action) for action in legalMoves]
+        # print(scores)
         bestScore = max(scores)
+        # print(bestScore)
         bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
+        # print(bestIndices)
         chosenIndex = random.choice(bestIndices) # Pick randomly among the best
+        # print(chosenIndex)
 
         "Add more of your code here if you want to"
 
@@ -67,14 +73,40 @@ class ReflexAgent(Agent):
         to create a masterful evaluation function.
         """
         # Useful information you can extract from a GameState (pacman.py)
+        if action == "Stop":
+            return 0 - 10000000000
         successorGameState = currentGameState.generatePacmanSuccessor(action)
+        curPos = currentGameState.getPacmanPosition()
         newPos = successorGameState.getPacmanPosition()
-        newFood = successorGameState.getFood()
+        # newFood = successorGameState.getFood()
+        curFood = currentGameState.getFood()
         newGhostStates = successorGameState.getGhostStates()
-        newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
-
+        # newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
         "*** YOUR CODE HERE ***"
-        return successorGameState.getScore()
+
+        retScore = successorGameState.getScore()
+        posToCheck = [(newPos[0] + 1, newPos[1]), (newPos[0] - 1, newPos[1]), (newPos[0], newPos[1] + 1), (newPos[0], newPos[1] - 1), newPos]
+        posToCheck = list(set(posToCheck) - set(curPos))
+        
+        foodList = curFood.asList()
+        if len(foodList) == 0:
+            retScore = 0
+        else:
+            bestDist = None
+            for dot in foodList:
+                distToDot = manhattanDistance(newPos, dot) + len(foodList)
+                if not bestDist:
+                    bestDist = distToDot
+                elif distToDot < bestDist:
+                    bestDist = distToDot
+            retScore = 0 - bestDist
+        
+
+        for x in newGhostStates:
+            if x.getPosition() in posToCheck:
+                retScore = 0 - 100000000000
+        # sleep(1)
+        return retScore
 
 def scoreEvaluationFunction(currentGameState):
     """
@@ -111,7 +143,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
     Your minimax agent (question 2)
     """
 
-    def getAction(self, gameState):
+    def getAction(self, gameState: GameState):
         """
         Returns the minimax action from the current gameState using self.depth
         and self.evaluationFunction.
@@ -135,7 +167,36 @@ class MinimaxAgent(MultiAgentSearchAgent):
         Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        numAgents = gameState.getNumAgents()
+        retVal = None
+        for i in range(self.depth):
+            
+        return retVal
+
+
+def value(gameState: GameState, agent: int = 0) -> float:
+    if gameState.isWin() or gameState.isLose():
+        return gameState.getScore()
+    else:
+        if agent == 0:
+            return maxValue(gameState, agent)
+        else:
+            return minValue(gameState, agent)
+
+def maxValue(gameState: GameState, agent: int) -> float:
+    value = 0 - 1e6
+    legalMoves = gameState.getLegalActions(agent)
+    for move in legalMoves:
+        value = max(value, gameState.generateSuccessor(move).getScore())
+    return value
+
+def minValue(gameState: GameState, agent: int) -> float:
+    value = 1e6
+    legalMoves = gameState.getLegalActions(agent)
+    for move in legalMoves:
+        value = min(value, gameState.generateSuccessor(move).getScore())
+    return value
+
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
