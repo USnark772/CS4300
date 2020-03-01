@@ -227,72 +227,67 @@ def minimax(evalFunc: classmethod, agent: int, depth: int, gameState: GameState,
 #         return ghostScore
 
 
-
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
     Your minimax agent with alpha-beta pruning (question 3)
     """
-
     def __init__(self, evalFn='scoreEvaluationFunction', depth='2'):
         MultiAgentSearchAgent.__init__(self, evalFn, depth)
-        self.re_init()
-
-    def re_init(self):
-        self.alpha = float("-inf")
-        self.beta = float("inf")
-        # self.currentDepth = 0
+        self.currentDepth = 0
 
     def getAction(self, gameState):
         """
-        Returns the minimax action using self.depth and self.evaluationFunction
+          Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
+        def abMiniMax(aid, depth, gst, a, b):
+            if gst.isLose() or gst.isWin() or depth == self.depth:
+                return self.evaluationFunction(gst)
+            if aid == 0:
+                return MaxValue(aid, depth, gst, a, b)
+            return MinValue(aid, depth, gst, a, b)
+
+        def MaxValue(aid, depth, gst, a, b): 
+            v = float("-inf")
+            for move in gst.getLegalActions(aid):
+                v = max(v, abMiniMax(1, depth, gst.generateSuccessor(aid, move), a, b))
+                if v > b:
+                    return v
+                a = max(a, v)
+            return v
+
+        def MinValue(aid, depth, gst, a, b): 
+            v = float("inf")
+
+            naid = aid + 1 
+            if gst.getNumAgents() == naid:
+                naid = 0
+                depth += 1
+
+            for move in gst.getLegalActions(aid):
+                v = min(v, abMiniMax(naid, depth, gst.generateSuccessor(aid, move), a, b))
+                if v < a:
+                    return v
+                b = min(b, v)
+            return v
+        
         _max = float("-inf")
         action = None
+        alpha = float("-inf")
+        beta = float("inf")
         for move in gameState.getLegalActions(0):
-            self.re_init()
-            util = self.abMiniMax(gameState, 1, 0)
+            depth = 0
+            util = abMiniMax(1, depth, gameState.generateSuccessor(0, move), alpha, beta)
             if util > _max or _max == float("-inf"):
                 _max = util
                 action = move
+            if _max > beta:
+                return _max
+            alpha = max(alpha, _max)
+    
 
         return action
 
-    def abMiniMax(self, state: GameState, agent, depth):
-        if state.isLose() or state.isWin() or depth == self.depth:
-            return self.evaluationFunction(state)
-        if agent == 0:
-            res = self.maxValue(state, agent, depth)
-            return res
-        else:
-            agent += 1
-            if state.getNumAgents() == agent:
-                agent = 0
-                depth += 1
-            return self.minValue(state, agent, depth)
-
-
-    def maxValue(self, state: GameState, agent, depth):
-        v = float("-inf") 
-        depth += 1
-        listOfMoves = state.getLegalActions(agent)
-        for move in listOfMoves:
-            v = max(v, self.abMiniMax(state.generateSuccessor(agent, move), agent, depth))
-            if v >= self.beta:
-                return v
-            self.alpha = max(self.alpha, v)
-        return v
-
-
-    def minValue(self, state: GameState, agent, depth):
-        v = float("inf")
-        listOfMoves = state.getLegalActions(agent)
-        for move in listOfMoves:
-            v = min(v, self.abMiniMax(state.generateSuccessor(agent, move), agent))
-            if v <= self.alpha:
-                return v
-            self.beta = min(self.beta, v)
-        return v
 
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
